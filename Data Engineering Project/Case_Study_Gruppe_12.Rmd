@@ -1,0 +1,745 @@
+---
+title: "Case Study"
+author: "Gruppe 12"
+date: "31 Maerz 2019"
+output:
+  html_document: default
+---
+
+## Vorwort
+Es gibt die Ueberlegung, dass sich zwei grosse Automobilhersteller ("OEM1" und 
+"OEM2") zusammenschliessen. Ein erfolgreicher Zusammenschluss haette eine 
+Umstrukturierung der Lieferanten zur Folge. Um die Sinnhaftigkeit zu eroertern, 
+wird in dieser Case Study eine Interaktive Shiny-App entwickelt. Diese stellt 
+eine Deutschlandkarte mit Informationen zu den Komponentenherstellern und den 
+Werken der OEMs die von diesen beliefert werden dar. Im Folgenden soll der 
+Entstehungsprozess der App erlaeutert werden.
+
+## Aufbereitung der Daten
+### Benoetigte Bibliotheken
+Zunaechst wird der Datenaufbereitungsprozess beschrieben. Fuer diesen werden eine 
+Reihe von Bibliotheken verwendet. Der Import dieser ist im Anschluss 
+dargestellt.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Benoetigte Bibliotheken
+library(dbplyr)
+library(data.table)
+library(readr)
+library(ff)
+library(tidyverse)
+library(lubridate)
+```
+
+### Ordnerstruktur des Data Ordners
+Um die Ordnerstruktur des Data-Ordners abzubilden, wird eine Liste der 
+Ordnerstruktur erstellt. Die `ordner` Liste enthaelt die Namen der Unterordner 
+von "./Data/".
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# ===== Pfad zu den Ordnern in Data ========
+knitr::opts_knit$set(root.dir = getwd())
+wd <- getwd()
+path <- paste(wd, "Data", sep = "/")
+# path = "C:/Users/Pascal/tubCloud/IDA Group 12/00_Abgabe/Data"
+
+# ==== Beschreibung der Ordnerstrukturen ====
+ordner <- list.files(path) # Beschreibt Die Unterordner von Data
+```
+
+Um die Dateinamen zu bestimmen wird mit einer for-Schleife durch die 
+`unterordner` iteriert. Dabei wird geprueft welche Endung die Datei hat - also 
+welcher Dateityp. Es existieren zwei Listen fuer den jeweiligen Dateityp .csv und
+.txt. Dabei wird bei uebereinstimmen der Dateitypen der Dateiname in der 
+jeweiligen Liste gesichert.
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Liste mit allen Dateien
+dateien <- list()
+# Liste mit jeweiligen Dateitypen
+dateien_csv <- list()
+dateien_txt <- list()
+
+# Schleifenweises Befuellen der obigen Listen
+for (unterordner in ordner) {
+  dateien[[unterordner]] <- list.files(paste(path, unterordner, sep = "/"))
+  dateien_csv[[unterordner]] <- list.files(paste(path, unterordner, sep = "/"),
+    pattern = "\\.csv$"
+  )
+  dateien_txt[[unterordner]] <- list.files(paste(path, unterordner, sep = "/"),
+    pattern = "\\.txt$"
+  )
+}
+```
+
+Mithilfe dieser Struktur kann spaeter schleifenweise der jeweilige Dateipfad 
+aufgerufen und importiert werden. Ein Import wird so vereinfacht.
+
+### Selbstgeschriebene Funktionen
+Um die einzelnen Schritte der Datenaufbereitung effizienter durchfuehren zu 
+koennen werden eine Reihe von Funktionen selbst geschrieben. Diese muessen vor 
+Ablauf des Codes in den Workinspace geladen werden, damit sie spaeter aufgerufen 
+werden koennen. Die benoetigten Funktionen sollen im Folgenden kurz beschrieben 
+werden.
+
+#### 1. get_list_txt
+Diese Funktion liest .txt Dateien ein, die als Einzeiler vorliegen und sichert 
+sie als Liste. Sie bekommt folgende Argumente:
+
+* `ordner_id` die ID des Ordners in dem sich .txt Datei befindet 
+(alphabetisch Einzelteil: 1 (...) Zulassungen: 6)
+* `dateiname` Name der einzlesenden Datei
+* `sep` Seperator, der die Zellen trennt
+* `numCols` Anzahl der einzulesenden Spalten
+* `deleteEvenCols = F` Spalten mit geradem Index werden geloescht, wenn `= T`
+
+Innerhalb der Funktion werden zunaechst die noetigen Argumente fuer die 
+```scan()``` Funktion definiert, welche die .txt Datei einliest. Neben dieser 
+wurden noch andere Funktionen zum Einlesen an der kleinsten einzeiligen Datei 
+(17MB) getestet. Das Ergebnis ist in der folgenden Tabelle dargestellt:
+
+| **Funktion**     | **Ergebnis**              |
+|------------------|---------------------------|
+| `fread()`        | Kein Ergebnis nach 20 min |
+| `read_delim()`   | Fehler                    |
+| `scan()`         | Import nach 5.3 s         |
+
+Die ```scan()``` Funktion liefert die besten Ergebnisse und wird demnach 
+ausgewaehlt. Ein Problem des Import der Textdateien besteht unter anderem auch 
+darin, dass sie einzeilig sind. Damit ist nicht definiert, ab welchem Wert die 
+ausgelesenen Werte in die naechste Reihe geschrieben werden. Ein Inspizieren der
+.txt Dateien ergibt, dass der Zeilenvorschub "\\n" durch andere Werte wie "\\t",
+"\\v", "\\a", "\\f" oder "\\b" ersetzt worden sind. 
+Die ```scan()``` Funktion ermoeglicht es trotzdem, die Datei die Datei in 
+mehreren Reihen einzuladen. Durch spezifizieren des Arguments `what` als Liste 
+der Laenge `numCols`, wobei `numCols` der Anzahl der Spalten entspricht, kann 
+der fehlende Zeilenvorschub kompensiert werden. `what = list("", "", "")` wird 
+z.B eine Liste der Laenge `numCols = 3` mit jeweils einer "nested" Liste mit den
+Elementen erstellt, die die durch den Seperator `sep` getrennt sind.
+
+Ein Nachteil der Funktion ist, dass sie nur One-Byte Seperator zulaesst. In "Data/Einzelteil/Einzelteil_T01.txt" z.B waere `sep = " | | "` noetig. Die 
+Loesung des Problems liegt darin, `sep = "|"` zu verwenden. Daraus resultiert 
+das zwischen dem eigentlichen `sep = " | | "` auch ein Element `" "` erkannt 
+wird. Damit muss die Spaltenanzahl (Elemente der `list()`) verdoppelt werden.
+Die unnoetigen Spalten `i` koennen anschliessend mit `list[i] = NULL` geloescht 
+werden.Diese sind immer gerade und werden bei angabe von `deleteEvenCols = T` 
+automatisch geloescht.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+get_list_txt <- function(ordner_id, dateiname, seperator, numCols,
+                        deleteEvenCols = F, deleteLastCol = F) {
+  # what fuer scan-function generieren zb. what=list("","","") bei numCols=3
+  what <- list()
+  # strip.white parameter fuer scan-function z.B. strip_white = c(T,T,T)
+  strip_white <- logical()
+  for (i in 1:numCols) {
+    what[[i]] <- ""
+    strip_white <- c(strip_white, T)
+  }
+
+  # Liste aus Textdatei mit Eingangsparametern generieren
+  # Dafuer scan() Funktion nutzen
+  list_txt <- scan(paste(path, ordner[ordner_id], dateiname, sep = "/"),
+    sep = seperator,
+    allowEscapes = F,
+    what = what,
+    strip.white = strip_white
+  )
+
+  # Sep kann nur 1Byte Character sein. sep="|" anstelle von "||" liefert z.B.
+  # leere Spalten diese werden geloescht wenn deleteEvenCols = T
+  if (deleteLastCol == T) {
+    list_txt[numCols] <- NULL
+  }
+  if (deleteEvenCols == T) {
+    del <- seq(2, numCols, 2)
+    list_txt[del] <- NULL # loesche leere Spalten
+  }
+  return(list_txt)
+}
+```
+
+#### 2. convert_list_to_df
+Diese Funktion konvertiert eine (nested) Liste in einen DataFrame. Sie besitzt 
+das folgenden Argument:
+
+* `list_txt` den Namen der Liste, die konvertiert werden soll
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+convert_list_to_df <- function(list_txt) {
+  # Dateframe generieren
+  df <- data.frame(list_txt, stringsAsFactors = F)
+  return(df)
+}
+```
+
+
+#### 3. del_trailing_nums
+Durch den Import mittels der `scan()` Funktion wird der eigentliche 
+Zeilenvorschub und der unspruengliche Index in der letzten Spalte angzeigt. Dies 
+sieht beispielsweise fuer die ersten fuenf Reihen folgendermassen aus:
+
+| Index | Letzte Spalte                 |
+|-------|-------------------------------|
+| 1     | Fehlerhaft_Fahrleistung.y\\a1 |
+| 2     | NA\\a2                        |
+| 3     | NA\\a3                        |
+| 4     | NA\\a4                        |
+| 5     | NA\\a5                        |
+
+Table: Trailing Numbers
+
+Um die "Trailing Numbers" an hinterster Stelle, welche der jeweiligen Zeile (bis zur Vorletzten) 
+entsprechen, sowie den Zeilenvorschub (hier \\a) zu loeschen wird die Funktion 
+`delTrailungNums` geschrieben. Sie loescht bei der letzten Spalte zunaechst die 
+Ziffern. Dabei wird die Zahl der Character geloescht die den Dezimalstellen der 
+entsprechenden Reihe entspricht. Z.B.: 
+
+| Reihe                 | # Dezimalstellen    | # zu loeschender Char am Ende |
+|-----------------------|---------------------|--------------------------------|
+| 1:9                   | 1                   | 1                              |
+| 10:99                 | 2                   | 2                              |
+| 100:999               | 3                   | 3                              |
+| 1000:9999             | 4                   | 4                              |
+| ...                   | ...                 | ...                            |
+| (...):Vorletzte Reihe | nChar(Vorletzte Reihe)| nChar(Vorletzte Reihe)       |
+
+Table: Dezimalstellen Trailing Numbers
+
+Anschliessend werden (falls vorhanden) die Zeilenvorschuebe, Leerzeichen oder 
+sonstige Characters geloescht, die in der letzten Spalte aufgefallen (z.B. ") 
+sind. Dies geschieht mittels Vektorisierung und hat daher eine sehr gute 
+Performance (groesster Dataframe mit 3204105 Zeilen in 2 s). Da bei manchen Datensaetzen in der letzten Reihe Zeilenvorschuebe vorhanden sind - und bei manchen nicht, wird dies innerhalb der Funktion gecheckt. Dann wird entweder incl. der letzten Zeile ein Character geloescht - oder bis zur vorletzten.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+del_trailing_nums <- function(df) {
+  # Reihen des DF
+  rows <- nrow(df)
+  # Dezimalstellen
+  rows_decimal <- nchar(rows)
+  # Erste Reihe je Iteration
+  beginning <- 1
+  # Letzte Reihe je Iteration
+  ending <- 9
+
+  # Ersten Character am Ende der letzten Spalte loeschen von Zeile 1 bis 9,
+  # geschieht danach schleifenweise
+  df[beginning:ending, ncol(df)] <- substr(
+    df[beginning:ending, ncol(df)], 1,
+    nchar(df[beginning:ending, ncol(df)]) - nchar(ending)
+  )
+  # Schleifenweises loeschen der Character
+  for (i in 2:rows_decimal) {
+    # Beginnende Reihe an dazugehoerige Dezimalstelle anpassen
+    beginning <- beginning * 10
+    # Exponentialschreibweise ausschalten
+    beginning <- as.integer(format(beginning, scientific = FALSE))
+    # Letzte Reihe um 9 erweitern 9 zu 99
+    ending <- as.integer(paste0(as.character(ending), "9"))
+    # Wenn Letzte Dezimalstelle erreicht ist -> Nur bis vorletzte Reihe loeschen
+    if (i == rows_decimal) {
+      ending <- rows - 1 # ending VORLETZTE Zeile
+    }
+    df[beginning:ending, ncol(df)] <- substr(
+      df[beginning:ending, ncol(df)], 1,
+      nchar(df[beginning:ending, ncol(df)]) - nchar(ending)
+    )
+  }
+
+  # ----- Trailing " " entfernen (2x zur Sicherheit) - dabei bis letzte Zeile
+  # Wert in zweiter Zeile (= erster Eintrag, da erste Zeile ColNames)
+  x <- df[2, ncol(df)]
+  if (substr(x, nchar(x) - 1 + 1, nchar(x)) == " ") {
+    df[1:ending, ncol(df)] <- substr(
+      df[1:ending, ncol(df)], 1,
+      nchar(df[1:ending, ncol(df)]) - 1
+    )
+    x <- df[2, ncol(df)] # Wert neu bestimmen
+  }
+  if (substr(x, nchar(x) - 1 + 1, nchar(x)) == " ") {
+    df[1:ending, ncol(df)] <- substr(
+      df[1:ending, ncol(df)], 1,
+      nchar(df[1:ending, ncol(df)]) - 1
+    )
+    x <- df[2, ncol(df)] # Wert neu bestimmen
+  }
+
+  # ------- Ab hier trailing "\t", "\v", "\a", "\f" oder "\b" entfernen
+  # Wert in letzter Zeile (ending ist vorletzte)
+  x_end <- df[ending + 1, ncol(df)]
+  # Letzter Buchstabe in letzter Zelle
+  condition_end <- substr(x_end, nchar(x_end), nchar(x_end))
+  # Letzter Buchstabe bei erstem Eintrag (zweite Zelle)
+  condition <- substr(x, nchar(x), nchar(x))
+
+  # Ist letzter Buchstabe trailing?
+  if (condition == "\t" ||
+    condition == "\v" ||
+    condition == "\a" ||
+    condition == "\f" ||
+    condition == "\b") {
+    lastrow <- ending # bis vorletzte Zeile ausser...
+    # ... die Letzte Zeile hat auch trailing (letzte Buchstaben gleich)
+    if (condition_end == condition) {
+      lastrow <- ending + 1 # bis LETZTE Zeile loeschen
+    }
+    # Hier wird letzter Character geloescht fuer alle Zeilen bis lastrow
+    df[1:lastrow, ncol(df)] <- substr(
+      df[1:lastrow, ncol(df)], 1,
+      nchar(df[1:lastrow, ncol(df)]) - 1
+    )
+    x <- df[2, ncol(df)] # Ersten Wert erneut auslesen
+  }
+
+  # Das gleiche wie oben bloss fuer Anfuehrungszeichen
+  if (substr(x, nchar(x), nchar(x)) == "\"") {
+    # bis vorletzte Zeile (Anfuehrungszeichen kommt nicht in letzter vor)
+    lastrow <- ending
+    if (condition_end == condition) {
+      lastrow <- ending + 1
+    }
+    df[1:lastrow, ncol(df)] <- substr(
+      df[1:lastrow, ncol(df)], 1,
+      nchar(df[1:lastrow, ncol(df)]) - 1
+    )
+    x <- df[2, ncol(df)]
+  }
+  # Dataframe ohne Trailing Nums und Newlines
+  return(df)
+}
+```
+
+#### 4. first_line_as_header
+Nimmt erste Zeile eines Dataframes, speichert sie als Header und loescht sie 
+anschliessend. Das Argument:
+
+* `df` Beschreibt dabei den Dataframe
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+first_line_as_header <- function(df) {
+  # Erste Zeile als ColNames speichern und dann loeschen
+  colnames(df) <- df[1, ]
+  df <- df[-1, ]
+  return(df)
+}
+```
+
+
+#### 5. remove_NA_columns
+Diese Funktion loescht alle Spalten eines DataFrames, die nur aus NA oder "NA" 
+bestehen indem sie zunaechst ueberprueft wie viele verschiedene Werte eine Spalte
+besitzt und wenn es nur einer ist diesen mit den beiden "NA" Kombinationen 
+abgleicht.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+remove_NA_columns <- function(df) {
+  for (c in names(df)) {
+    if (length(unique(df[[c]])) == 1) {
+      if (is.na(unique(df[[c]])) || (unique(df[[c]]) == "NA")) {
+        df[[c]] <- NULL
+      }
+    }
+  }
+  return(df)
+}
+```
+
+#### 6. clean_dates
+Funktion um Datensaetzen eine einheitliche Datums-Spalte zu geben. Je nach 
+Datensatz muessen entweder zwei Spalten zusammengefuehrt werden oder nur das 
+Format der Spalte geaendert werden. Hierfuer wird das Paket `lubridate` verwendet.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+clean_dates <- function(df) {
+  # Datensaetze koennen "origin" und zweite Spalte haben,
+  # welche die Tage ab origin zaehlt...
+  if ("origin" %in% names(df)) {
+    df[["Produktionsdatum"]] <- dmy(df$origin) +
+      as.numeric(df$Produktionsdatum_Origin_01011970)
+    df[["origin"]] <- NULL
+    df[["Produktionsdatum_Origin_01011970"]] <- NULL
+  }
+  # ... oder es muss nur das Format der Datums-Spalte angepasst werden.
+  if ("Produktionsdatum" %in% names(df)) {
+    df[["Produktionsdatum"]] <- ymd(df$Produktionsdatum)
+  }
+  if ("Produktionsdatum.x" %in% names(df)) {
+    df[["Produktionsdatum.x"]] <- ymd(df$Produktionsdatum.x)
+  }
+  if ("Produktionsdatum.y" %in% names(df)) {
+    df[["Produktionsdatum.y"]] <- ymd(df$Produktionsdatum.y)
+  }
+  return(df)
+}
+```
+
+#### 7. merge_df
+Einige der .csv Dateien enthalten Variablen in mehrfacher Ausfuehrung. Ab einer 
+bestimmten Zeile sind die Daten in Pendant-Spalten vorhanden, welche auf ".x" 
+oder ".y" enden. Die urspruenglichen Spalten enthalten ab hier nur noch "NA".
+
+Dieser Funktion duerfen ausschliesslich Dataframes uebergeben werden, welche nur
+noch aus den Spalten "ID" und "Produktionsdatum" sowie ihrer Pendants bestehen. 
+Ausserdem muessen die "ID" Spalten die vorderen Spalten sein. Dies ist potentiell
+risikoreich, in unserem Fall jedoch sicher, da beim Import per `select()` die
+Spaltenreihenfolge festgelegt ist.
+
+Bei Datensaetzen die nicht zerstueckelt sind, muessen nur die Spaltennamen angepasst
+werden, um anschliessend einheitliche Dataframes zu gewaehrleisten.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+merge_df <- function(d) {
+  # Datensaetze bei denen jeweils ein Pendant zu jeder Spalte vorhanden ist
+  if (length(d) == 4) {
+    d[["ID"]] <- d[[1]]
+    d[["ID"]][!is.na(d[[2]])] <- d[[2]][!is.na(d[[2]])]
+    d[["PD"]] <- d[[3]]
+    d[["PD"]][!is.na(d[[4]])] <- d[[4]][!is.na(d[[4]])]
+    d <- dplyr::select(d, ID, PD)
+  } else if (length(d) == 6) {
+    # Datensaetze bei denen jeweils zwei Pendants zu jeder Spalte vorhanden sind
+    d[["ID"]] <- d[[1]]
+    d[["ID"]][!is.na(d[[2]])] <- d[[2]][!is.na(d[[2]])]
+    d[["ID"]][!is.na(d[[3]])] <- d[[3]][!is.na(d[[3]])]
+    d[["PD"]] <- d[[4]]
+    d[["PD"]][!is.na(d[[5]])] <- d[[5]][!is.na(d[[5]])]
+    d[["PD"]][!is.na(d[[6]])] <- d[[6]][!is.na(d[[6]])]
+    d <- dplyr::select(d, ID, PD)
+    # nicht zerstueckelte Datensaetze muessen nur umbenannt werden
+  } else if (length(d) == 2) {
+    names(d) <- c("ID", "PD")
+  }
+  return(d)
+}
+```
+
+
+### Import der Daten
+Mithilfe der obigen Funktionen koennen die Daten zunaechst importiert, und dann 
+weiter aufbereitet werden. Es wird mit den Relationstabellen der 
+Fahrzeug-Bestandteile begonnen, welche aus 4 .csv Dateien bestehen.
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Import der Fahrzeug-Bestandteile Datenstaetze aus Ordner 2: "Fahrzeug"
+data_best <- list()
+for (file in dateien_csv[[2]][1:4]) {
+  # Datensatz wird nach Fahrzeugtyp benannt
+  ID <- substr(file, 29, 33)
+  filename <- paste(path, ordner[2], file, sep = "/")
+  # schon beim Import werden nur die notwendigen Spalten abgespeichert, um den
+  # Speicherbedarf moeglichst gering zu halten
+  data_best[[ID]] <- filename %>%
+    fread(header = T) %>%
+    dplyr::select(ID_Karosserie, ID_Schaltung, ID_Sitze, ID_Motor, ID_Fahrzeug)
+}
+```
+
+Ferner werden die Geo-Daten der Werke benoetigt, da die Stroeme auf einer Karte
+ortsgetreu visualisiert werden sollen. Auch diese Daten liegen ausschliesslich
+als .csv vor.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Import der Werks-Geo-Daten aus Ordner 3: "Geodaten"
+data_geo <- list()
+for (file in dateien_csv[[3]][2:3]) {
+  # Datensatz wird nach Werk benannt
+  ID <- substr(file, 1, 9)
+  data_geo[[ID]] <- fread(paste(path, ordner[3], file, sep = "/"))
+}
+```
+Die Basisaufgabe der Case Study besteht im Darstellen der Volumenstroeme von 
+Komponenten welche 2016 hergestellt wurden. Es muessen also alle Datensaetze aus
+dem Komponenten-Ordner importiert werden. Jedoch reicht es nur die "ID"- und
+"Produktionsdatum"-Spalte zu speichern, da in diesen alle notwendigen 
+Informationen enthalten sind.
+
+Weil der Import fuer .txt und .csv Dateien unterschiedlich ablaeuft, sind weitere 
+Schritte notwendig, um alle Datensaetze dieses Typs auf gleiche Format zu 
+bringen. Zunaechst werden die 10 .csv Dateien in eine Liste aus Dataframes 
+abgespeichert:
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Import der Komponenten-Datenstaetze aus Ordner 4: "Komponenten"
+# Import der .csv Dateien
+data_komp <- list()
+for (file in dateien_csv[[4]][17:26]) {
+  # Komponentenname finden durch Abspalten von ".csv" und Waehlen von Substring
+  ID <- substr(file, 12, nchar(file) - 4)
+  filename <- paste(path, ordner[4], file, sep = "/")
+  # schon beim Import werden nur die notwendigen Spalten abgespeichert, um den
+  # Speicherbedarf moeglichst gering zu halten, hier die Spalten "ID" und
+  # "Produktionsdatum" (plus eventuell Pendants, s. Kommentar zu merge_df() ).
+  # Die Datums-Spalte wird im lubridate-Datumsformat gespeichert.
+  data_komp[[ID]] <- filename %>%
+    fread(header = TRUE) %>%
+    clean_dates() %>%
+    dplyr::select(starts_with("ID_"), starts_with("Produktionsdatum"))
+}
+```
+Der Import der .txt Dateien gestaltet sich etwas umstaendlicher. Zunaechst muss
+fuer jede Datei der passende Seperator, die Spaltenanzahl und Informationen ueber 
+zu loeschende Spalten gefunden werden. Diese werden als `importSettings` 
+abgespeichert. Die gespeicherten Informationen werden dann in der gleichen Reihenfolge an die Funktion `get_list_txt` uebergeben - welche die .txt Dateien als List sichert. 
+
+Beim Einlesen der sechs .txt Dateien werden die oben 
+beschriebenen Funktionen `convert_list_to_df()`, `first_line_as_header()` und je nach
+Bedarf `del_trailing_nums()` angewendet. Nach diesen Schritten kann mit den 
+Datensaetzen auf die gleiche Weise verfahren werden, wie mit den .csv 
+Aequivalenten.
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Import der .txt Dateien
+# Settings: list(Seperator, Spaltenanzahl, bool(DeleteEvenCols), bool(DeleteLastCol))
+importSettings_4_txt <- list()
+importSettings_4_txt[["Komponente_K1DI2.txt"]] <- list("\\", 9, F, F)
+importSettings_4_txt[["Komponente_K2LE1.txt"]] <- list("I", 30, T, F)
+importSettings_4_txt[["Komponente_K2LE2.txt"]] <- list("\\", 10, F, T)
+importSettings_4_txt[["Komponente_K2ST1.txt"]] <- list("|", 9, F, T)
+importSettings_4_txt[["Komponente_K3AG2.txt"]] <- list("\\", 10, F, T)
+importSettings_4_txt[["Komponente_K7.txt"]] <- list("\t", 10, F, T)
+
+for (i in 1:6) {
+  file <- dateien_txt[[4]][i]
+  # Komponentenname finden durch Abspalten von ".txt" und Waehlen von Substring
+  ID <- substr(file, 12, nchar(file) - 4)
+  sep <- as.character(importSettings_4_txt[[i]][1])
+  ncols <- as.integer(importSettings_4_txt[[i]][2])
+  # Funktion, die Datensaetze mittels "scan" und passenden Parametern importiert
+  list_4_i <- get_list_txt(
+    ordner_id = 4, dateiname = file, seperator = sep,
+    numCols = ncols,
+    deleteEvenCols = importSettings_4_txt[[i]][3],
+    deleteLastCol = importSettings_4_txt[[i]][4]
+  )
+  # ist der DeleteLastCol Parameter False muss die Funktion del_trailing_nums()
+  # zusaetzlich ausgefuehrt werden
+  if (importSettings_4_txt[[i]][4] == F) {
+    # Import und Vereinheitlichung und Reduzierung der Daten geschieht in pipe-
+    # Struktur, um Speicherbedarf gering zu halten
+    data_komp[[ID]] <- list_4_i %>%
+      convert_list_to_df() %>%
+      del_trailing_nums() %>%
+      first_line_as_header() %>%
+      clean_dates() %>%
+      dplyr::select(starts_with("ID_"), starts_with("Produktionsdatum"))
+  } else {
+    data_komp[[ID]] <- list_4_i %>%
+      convert_list_to_df() %>%
+      first_line_as_header() %>%
+      clean_dates() %>%
+      dplyr::select(starts_with("ID_"), starts_with("Produktionsdatum"))
+  }
+}
+```
+
+### Cleaning der Daten
+Das weitere Saeubern der Daten geschieht hier fuer die Komponenten-Datensaetze. Da
+die Datensaetze der .csv und .txt Dateien beim Import auf ein einheitliches
+Format gebracht wurden, koennen sie nun gemeinsam verarbeitet werden. Hierfuer
+werden zunaechst per `merge_df()` Datensaetze, welche in mehrere Bloecke 
+gleichartiger Spalten aufgespalten sind, zusammengefuegt.
+
+Im Anschluss werden die Daten nach Produktionsdatum gefiltert. Die Datensaetze 
+auf die auschliesslich 2016 hergestellten Komponenten zu reduzieren, verringert
+die Speicherbelastung weiter. Es bestand die Ueberlegung diesen Schritt an den 
+Import anzufuegen, um weitere Performance-Steigerungen zu erreichen. Allerdings
+ist das Skript auch in der jetzigen Form in sehr annehmbarer Zeit lauffaehig und
+die Trennung von Import und Cleaning schafft eine klarere Struktur und 
+potentiell einfacheres Debugging.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Merge und Filtern nach Datum der Komponenten-Datensaetze
+# (Koennte an Import angehaengt werden, um Speicher noch weniger zu belasten)
+for (i in 1:16) {
+  data_komp[[i]] <- data_komp[[i]] %>%
+    merge_df() %>%
+    filter(PD >= "2016-01-01" & PD < "2017-01-01") %>%
+    select(ID)
+}
+```
+
+Von hier an reicht es mit nur der ID weiterzuarbeiten, da diese alle notwendigen
+Informationen ueber Art der Komponente, Hersteller und Werk enthaelt, wie im beispielhaften Output ersichtlich ist.
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+head(data_komp[[1]])
+```
+
+### Joining der Daten
+Die Information, welche Komponente an welches Werk geliefert wird, ist in den
+Relationstabellen ("Bestandteile_Fahrzeug") vorhanden. Durch einen `inner_join`
+dieser Daten mit den Komponenten-Datensaetze `data_komp` werden die gewuenschten 
+Informationen bezueglich Baujahr und Lieferweg von Komponenten kombiniert.
+
+Zur Vereinfachung des Join-Vorgangs werden beide Listen aus Dataframes zunaechst 
+per `bind_rows()`zu jeweils einer langen Tabelle zusammengefuehrt. Bei den 
+Relationstabellen wird zudem per `melt()` die Struktur des Datensatzen der 
+veraenderten Aufschluesselungs-Logik angepasst. Das heisst, dass eine Reihe nun 
+nicht mehr alle Komponenten aufschluesselt, welche in einem Fahrzeug verbaut 
+sind. Stattdessen gibt es jetzt zu jeder Komponente eine Reihe welche neben der 
+Komponenten-ID nur noch die ID des zugehoerige Fahrzeugs auflistet, wie im Output ersichtlich ist.
+
+Der `inner_join()`, welcher anschliessend ausgefuehrt wird, kann auch als Filtern
+der Relationstabelle nach Komponenten mit Produktionsjahr 2016 angesehen werden.
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Vorbereiten der Bestandteile-Fahrzeug-Tabellen fuer Join
+data_best <- data_best[1:4] %>%
+  # Fuege die einzelnen Tabellen reihenweise zusammen
+  bind_rows() %>% 
+  # veraendere Form, sodass fuer jede Komponente eine Zeile existiert
+  melt(id.vars = "ID_Fahrzeug", value.name = "ID") %>%
+  dplyr::select("ID", "ID_Fahrzeug")
+
+# Zusammenfuehren der Komponenten-Tabelle fuer join
+data_komp <- bind_rows(data_komp)
+
+# Join vereinigter Komponenten-Tabelle mit vereinigter Fahrzeug-Tabelle
+joined_all <- inner_join(data_komp, data_best, by = "ID")
+
+head(joined_all)
+```
+
+### Erstellen des finalen Datensatzes
+Fuer die Fragestellung ist nur die Summe der Komponenten je Lieferweg relevant,
+daher kann der Datensatz erheblich verkleinert werden indem man die Daten 
+aggregiert. Dies wird durch die Kombination von `group_by()` und 
+`summarise(n())` erreicht, welches die Elemente gruppierter Dataframes zaehlt.
+Da Komponenten-Fluesse je nach Hersteller, Komponenten-Werk und OEM-Werk 
+dargestellt werden sollen, erfolgt die Gruppierung nach den Variablen 
+`Hersteller_K`, `Werk_K` und `Werk_O`. Das _K steht dabei fuer Komponente, _O fuer OEM. Diese werden vorher per `seperate()` aus
+der ID der Komponenten extrahiert.
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Aggregieren der Daten, um Komponentenfluesse zu erhalten
+komp_flows <- joined_all %>%
+  # Zerteile IDs, um Informationen ueber Hersteller und Werke einzeln zu haben
+  separate(ID, c("Komponente", "Hersteller_K", "Werk_K", "Nummer_K"), "-") %>%
+  separate(ID_Fahrzeug, c("Fahrzeugtyp", "OEM", "Werk_O", "Nummer_O"), "-") %>%
+  # Aggregiere Daten, um Fluesse von Komponenten- nach OEM-Werk zu erhalten
+  group_by(Hersteller_K, Werk_K, Werk_O) %>%
+  summarise(n = n())
+
+# Test, ob Summe der Komponenten stimmt
+if (sum(komp_flows$n) == nrow(data_komp)) {
+  print("Keine Komponenten verlorengegangen!")
+} else {
+  print("Summe der Komponenten stimmt nicht! Bitte ueberpruefen.")
+}
+```
+Der nun erhalten Datensatz enthaelt alle Informationen ueber die 
+Komponenten-Fluesse, aber ist noch nicht ausreichend, um die Daten ortsgetreu
+auf einer Karte darstellen zu koennen. Daher wird er nun mit dem Geo-Datensatz 
+zusammengefuehrt, welcher in Abhaengigkeit der Werksnummer den Staedtenamen und 
+Koordinaten liefert.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+# Zusammenfuehren mit Geodaten
+# Angleichen des Datenformats der Komponenten-Tabelle
+komp_flows$Werk_K <- as.numeric(komp_flows$Werk_K)
+komp_flows$Werk_O <- as.numeric(komp_flows$Werk_O)
+
+geo_K <- data_geo[[2]]
+colnames(geo_K) <- c(
+  "PLZ_K", "ORT_K", "Werk_K", "Breitengrad_K",
+  "Laengengrad_K"
+)
+
+geo_O <- data_geo[[1]]
+colnames(geo_O) <- c(
+  "PLZ_O", "ORT_O", "Werk_O", "Breitengrad_O",
+  "Laengengrad_O"
+)
+# entfernt das "o" vor OEM-ID
+geo_O$Werk_O <- substr(geo_O$Werk_O, 2, 3) 
+geo_O$Werk_O <- as.numeric(geo_O$Werk_O)
+
+# Join der Komponentenfluss-Daten mit Geodaten
+komp_flows_geo <- komp_flows %>%
+  left_join(geo_K, by = "Werk_K") %>%
+  left_join(geo_O, by = "Werk_O") %>%
+  remove_NA_columns()
+
+# Speichern des finalen Datensatzes
+save(komp_flows_geo, file = "Finaler_Datensatz_12.RData")
+```
+Der Datensatz wird als __"Finaler_Datensatz_12.RData"__ gespeichert, und dann in der Shiny-App spaeter abgerufen.
+
+### Erklaerung des finalen Datensatzes
+Der finale Datensatz enthaelt pro Zeile eine Komponenten-Lieferkette. Er besitzt
+dafuer die folgenden Variablen:
+
+- Postleitzahl, Ortsnamen, Laengen- und Breitengrad, Werks- und 
+Herstellerkennung jeweils auf Komponenten- und OEM-Ebene (`_K` und `_O`)
+- die Anzahl der Komponenten `n` welche zwischen den beiden beschriebenen Orten im
+Jahr 2016 versendet wurden.
+
+```{r echo = TRUE, message = FALSE, warning  = FALSE}
+head(komp_flows_geo)
+```
+
+## Shiny App
+### Erstellen der Shiny-App 
+Die aufbereiteten Daten aus dem `komp_flows_geo`-Dataframe, der als 
+"Finaler_Datensatz_12.RData" gesichert ist, koennen nun in einer 
+Shiny-Applikation visualisiert werden. Die Shiny-Applikation soll eine 
+Deutschlandkarte mit den Komponentenherstellern sowie den OEMs enthalten und 
+die Volumenstroeme von den Herstellern zu den OEMS mit einer farblichen Skala 
+kennzeichnen.  
+
+Der Code der Shiny-App ist wie folgt aufgebaut:    
+  1. Bibliotheken  
+  2. Erstellen der GUI  
+  3. Funktionen  
+  4. Server-Funktion die gerenderte leaflet-Objekte enthaelt und auf Radiobutton 
+  reagiert  
+  5. Aufruf der shiny-App mit GUI und server als Input  
+  
+### Erstellen der GUI
+In der Aufgabenstellung wird eine Auswahl des OEMs gefordert, diese wird durch 
+eine Radiobuttonauswahl realisiert. Ausserdem ist die Einsicht in die 
+zugrundeliegenden Daten gefordert, welche in einem zweiten Reiter einsehbar 
+sind. Die Panels lassen sich in der Definition der GUI mittels `tabPanel` 
+hinzufuegen. Ausserdem wird ein `plotOutput` erstellt, in dem nachfolgend ueber die
+Radiobuttonwahl ein dem OEM-zugehoeriges Balkendiagramm angezeigt wird. 
+Zusaetzlich werden dem `leaflet()`-Objekt `map` schon die Eigenschaften fuer den
+Stil der Karte und deren Zentrierung zugewiesen.
+
+### Funktionen
+Die Shiny-App beinhaltet folgende Funktionen:   
+* `calc_distance`  
+  * `get_col_scale_value`  
+  * `get_col_vectors`  
+  * `get_coord_lines`  
+  * `get_coord_markers`  
+
+Die Funktion `calc_distance` berechnet die Entfernung in Kilometern von zwei 
+Punkten anhand der Geo-Koordinaten. Dies dient zur Angabe der Entfernung zu den
+OEMs im Popup der Marker der einzelnen Werke. `get_col_scale_value` gibt den Wert 
+in einer Farbskala aus fuer ein spezifisches Werk und OEM. Damit wird die Farbe 
+der jeweiligen Verbindungslinie festgelegt. `get_col_vectors` Erstellt eine 
+Farbpalette mit `num_elem`-Anzahl an Stuetzstellen. Die Stuetzstellen werden dabei 
+linear zwischen Maximal- und Minimalwert der Volumenstroeme eines spezifischen 
+OEMs interpoliert. `get_coord_lines` bringt die Koordinaten aus dem 
+`komp_flows_geo`-Dataframe in die richtige Struktur und filtert nur die fuer den 
+gewaehlten OEM benoetigten Daten. Dabei ist zu beachten, dass die 
+`addPolyLines`-Funktion immer zwei aufeinanderfolgende Datenpunkte verbindet und 
+daher jeder zweite Datenpunkt die Koordinaten des OEMs enthalten muss. Ausserdem 
+fuegt die Funktion die Volumenstroeme und Farben mittels der 
+`get_col_scale_value`-Funktion an das Dataframe an, welches zurueckgegeben wird. Mit 
+`get_coord_markers` werden die Koordinaten aller Komponentenhersteller, die ein 
+OEM beliefern, in ein Dataframe gespeichert. Als ersten Eintrag erhaelt das 
+Dataframe die Koordinaten des OEMS, darauffolgend die der Komponentenhersteller. 
+Ausserdem werden an das Dataframe das Werk, der Komponentenhersteller, der 
+Volumenstrom, die Entfernung mittels `calc_distance` sowie der Ort angefuegt. 
+Diese zusaetzlichen Informationen sollen im Popup der Marker angezeigt werden.
+
+### Server-Funktion
+Die Server-Funktion laedt die Icon-Bilddateien ein und rendert die Karte mit den 
+ihr schon zugewiesenen Parametern. Dem zweiten Reiter wird das komplette 
+`Dataframe` als Output uebergeben um den zugrundeliegenden Datensatz 
+darzustellen. Dem `plotOutput` wird ein `ggplot`-Barplot uebergeben, um wie 
+gefordert die Komponenten der einzelnen Hersteller darzustellen.  
+Der Ausdruck `observe()` ist reaktiv und wird ausgefuehrt bei Aenderungen der 
+Inputs, also in dem Fall durch die Wahl der Radiobuttons. Um in diesem Ausdruck 
+bereits gerenderte Karten zu aendern, wird `leafletProxy` benoetigt, welches auf
+`"mymap"` verweist. Eine Schleife laeuft nun alle vier moeglichen OEM-Werke 
+durch und aktualisiert im Falle, dass das OEM gewaehlt wurde, die Karte mit den 
+Markern und Linien sowie der Legende. Die Marker erhalten zusaetzlich Popups in 
+denen wichtige Informationen der Komponentenhersteller angezeigt werden.
+
+### Starten der Shiny-App
+Zu allerletzt wird die Shiny-Applikation mit der erstellten GUI `ui` und der 
+Server-Funktion gestartet mittels des Ausdruckes `shinyApp(ui,server)`.
