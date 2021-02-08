@@ -1,0 +1,62 @@
+iliii,iii,,,,,    ,    ,,,,i,ii,,  ,   ,,,,       ,,i,,              ,,,,iiilli,
+iiliii,,,,,,  ,         ,,,i,iii,     , ,,     ,  ,,i,,,,,, ,         ,,,,iiliii
+liiii,,,,,,,,    ,       ,,i,,li,       ,,       ,i,i,,iil,,  ,   ,  ,  ,,,iliii
+iiiii,,, , ,,    , , , ,,l7b7,ili,,,  ,,,,, ,   ,,iii7ZW&Wt,,,,  ,     ,,,,iiiii
+ili,,, ,,,, ,     , , ,lZ&&&&bi7,,,  ,,,,,,  , ,,iliZ&&&&&&t,,,,, ,   ,,, ,,iiil
+liii,,,,,,,,,,,,,,, ,,iZ&&&&&Wbti, , ,,,i,,,,,,,,ilb&&&&&&&Wi,,, , ,,,,, ,,,,,ii
+iii,,,,,,,,,,,,,,,,,,lW&&&&&&&WZi,,,,,,,,,,,,,,,,lZ&&&&&&&&&Zli,,,,,,,,,,,,,,,ii
+i,,,,,,,,,, ,,,,,,,i7W&&&&&&&&&Wii,,,,i,,i,,,,,,it&&&&&&&&&&&tiiii,,,,,,   ,,ii,
+l,i,, ,,,,,,,,,,,,,lW&&&&&&&&&&Zi,i,,,,,,,,,,,,,ib&&&&&&&&&&&W7ii,,,,, ,  ,,,,,i
+iii,,,  ,,,,,,iiiiit&&&&&&&&&&&Ziii,i,i,,ii,,,,iib&&&&&&&&&&&&Z7ii,,,,       ,ii
+ii,,,, ,,,,,,i,,il7&&&&&WW&&&&&Z,ii,ii,iiiii,ii,ib&&&&bb&&&&&&&ti,,         ,,ii
+iii,,,,,,,,,,,,,ilb&&&&&WiW&&&&Zllliiiii,i,,iiiiib&&&WWiW&&&&&&Wl,,  ,       ,,i
+ii,,,,,,,,,,,,,,lZ&&&&&&Wb&&&&&Zillii,,,,,,,,,,,i7&&&&&&&&&&&&&&Wl,,         ,,i
+iii,,,,, ,,  ,,,7&&&&&&&&&&&&&&bii,,,,,,,,,,,,,,,lW&&&&&ZW&&&&&&&Z,,        ,,,i
+lil,,, ,,,,,,,i7W&&&&&&&&WWW&&Zi,,,, ,,,,,,,    ,,7&&&&WW&&&&&&&&&7,         ,,i
+l7li,,,,,,,,,,lb&&&&&&&&&&&&&&t, ,, ,, ,,,,       ,b&&&&&&&&&&&&&&&t,,       ,,i
+lii,,,,,,,,,,,7Z&&&&&&&&&&&&&Wi   ,,,,,,,  ,,, ,   iW&&&&&&&&&&&&&&Wi,      ,,,i
+llli,,,,,,,,,,lZ&&&&&&&&&&&&&l     ,,, ,,,  ,,,, ,  l&&&&&&&&&&&&&&W7,,,   ,,,ii
+llli,,,,,,,,il7Z&&&&&&&&&&&&l    ,,,,,,,,,,,,,, ,,  ,b&&&&&&&&&&&&&&l,      ,,ii
+lli,,,,,,,,,,ilb&&&&&&&&&&&7   ,  ,,,,i,,,,,,, ,, ,,,iZ&&&&&&&&&&&&Wi ,,    ,,il
+liii,,,,,,,,,,t&&&&&&&&&&&b,  ,, ,,,,,,,,,,,,,,, ,,,,ib&&&&&&&&&&&&Zi,, ,, ,,,il
+lliii,,,,,,,,i7W&&&&&&&&&Wi,,,,,,,,,,,,ii,,,,,,,,,, ,ilW&&&&&&&&&&&Wl,,,,,,,,,ii
+llii,   ,,,,,it&&&&&&&&&&7,,,,,,,,,,,,i,,,,,,,,,,,,,,,ib&&&&&&&&&&&Zi,,,,,,,,,,l
+lii,  ,,,,,iiit&&&&&&&&&t,,,,,,,,,,,,,,,,,,,,,,ii,,,,,ilZ&&&&&&&&&&Wli,,,,,,,,,i
+lii,,  ,,,,,,ib&&&&&&&&Zi,,,,,,,,,,,,,,,,,,,,iiii,,i,,,,7&&&&&&&&&&biii,,,,,,,il
+li,,,,,,,,,,,i7Z&&&&&&&bi,,,,,,,ii,,,,,,, ,,,,iiiiii,,,,lW&&&&&&&&&bii,,,,,,,iil
+lii,,,,,,,,,,ilZ&&&&&&&7,,,,,i,ii,,,,,,,,,,,,,,iliiii,i,,7W&&&&&&&&lii,,,,,,,ill
+lli,,,,,,,,,iilb&&&&&&Wli,,,i,i,i,,,, ,,,,, ,,,,iiiiiiii,it&&&&&&&Z7iii,,,,,,iil
+7lii,,,,,,,,i,ilZ&&&&&tl,,,,,iii,,,,,,,,,,,,,,,,,iiiiiii,,lZ&&&&&&tiii,,,,,,,ill
+lllli,,,,,,,,iiltZ&&&bl,,,,,iii,,,,,,,,,,,,,,i,,,iiiiiii,,i7W&&&Wbli,ii,,,,,,iil
+l77li,,,,,,,,,iil7Zbbiii,,,,iii,,,,,,,,,,,,iiii,,,iiiii,,,ii7WWZtliii,i,,ii,iil7
+77lli,,,,,,,,iii,il7lii,,,,,iii,,,,,iiiiiiiiiiiiiii,i,ii,,,il77lii,,,,,,,iiilll7
+l77lliii,,,,,,i,,iiiil,,,,,,i,i,,l77llllil77tt7liili,,,,i,,illiiii,i,,ii,iiiil77
+llll7lii,,,,,,,,,,iillii,,,,,i77ZW&&&WWZtbZ&&W&&ZZZi,,,,,,i777iii,,,,,,,,,iill7t
+iil7t7li,,,,,,i,,,iillii,,,,,i&&WW&&&&&&&&&&&&W&&&Z,,,,,,,ittlli,,,,i,,iiiill77t
+il777liii,,,,,,i,,,l7ll,,,,,,,&&&ZZW&&&&&&&WW&&&&&t,i,,,,,l7t7li,,,,,,iii,,l7777
+tl7lllliii,,,,iii,ill7lii,,,,,Z&&&&&&&&&&&WZ&&&&&&lii,iiiiltb7lli,,,,i,,ililt777
+Zt7ll7llliii,,iiiiiill7,,,,,i,7&&&&&&&&&&&&&&&&&Wbllii,i,i7tt7llii,,,,,iiil7t777
+WZti7lilllli,,iiiiiiil7li,,,iiib&W&&&&&&&&&&&&W&Z77llii,ii7tt7lii,i,,,i,ill7777t
+&&Ztlilll7li,iiiiiiiilt7iiiiliilZ&&&&&&&&&&&&&&b7t7liiiiilt77llii,iiiiill7ll7t77
+&&&Z7tiilllliiiliii,il77iiiilii77tW&&&&&&&&&&Zbtbtlllli,l7777llli,,iilllll77l77l
+&&WbZl7lillllillllilii7t7illl777tttbW&&&&&&WbbbZb777iliil777liiiiiiillt7t7ll7777
+&&&&bZb7ll7lllllllllilltt7ilt7ttbbbbZW&&&&&ZZWZbbt77lii77777lillilll7t77ttt7l7bW
+&&&&&&&t7llll77lll7l7ll7tbll7777bZZZZZ&&&&ZWZZZbt7t7lltttlllli,lli7777ttl7btttZ&
+&&&&&&&Wt77llllllll7t777tbt7l7tbbbbbZZZW&ZZZZbbbtt777bbtt7777ll7l77t77777t7ZZW&&
+&&&&&&&WZbbbt7l7lll77tttttbb7ttbZZZZZZZZWbZZZbZbttttZbbt7777t77tt7tt7t77tbZb&&&&
+&&&&&&&&&W&Zb7tll7tt7tbbt77ZZttttbbZbbbZWbbbbtbt7ttWWbt777bbbbbtbt7tbtZttW&W&&&&
+&&&&&&&&&&&&bZbl7tt7ttbtb77bWWWtbbbZW&&&&&WWZWZbZW&WZbt7ltbZbbbb777tZZZ&WW&&&&&&
+&&&&&&&&&&&&&&WWZZb7tbtttb7tZ&&&&&&&&&&&&&&&&&&&&&&Wbbt7bbbbbbtbb7ttW&Z&&&&&&&&&
+&&&&&&&&&&&&&&&&&WZttttttt7tbW&&&&W&W&&&&&WWWZb&&&&ZZtt7tbbZbtttZtbZW&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&WbZtbbt77ttZ&&&&tWWWZZZZWbWtb&&&Wbt77tbZZZZZbbZWbWW&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&WZZbtt7tttZ&&WZtW&WWZWW&Z7W&&&bt777tbZWWW&&WW&&W&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&WWWZZbbb7tt&&WWttbbbbbZZtb&&&Ztl777bbbWW&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&WWWWWbt77b&&WWZZbbbbZWWW&&Wttl7ttbZZW&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&W&&&&Ztt7tW&&&&W&&&&WW&&&&b77tbZZW&&&&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&WZbt7tZ&&&&&&&&&&&&WZttlZWW&&&&&&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&WWbt7bZ&&&&&&&&&&&bt7bZZ&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&Wb7l7ZZ&&&&&&Wbtt77Z&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&Ztli7tbbbbtb7ll77Z&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&WZ7iililliiil7b&W&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&Z7lilllltWW&&&&&&&&&&&&ZZbZZ&bWZbZbZZbWWbZt&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&bbbWWWW&&&&&&&&&&&&&&&&&&&&&&&&&&&Wb&&&&&&&
