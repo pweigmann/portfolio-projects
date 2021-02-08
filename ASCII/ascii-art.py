@@ -22,7 +22,7 @@ for entry in os.scandir(path):
     if entry.name.endswith('.jpg'):
         image_list.append(entry.name.split(".")[0])
 
-image = image_list[0]
+image = image_list[11]
 
 # read image
 im = Image.open('pictures/' + image + '.jpg')
